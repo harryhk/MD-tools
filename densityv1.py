@@ -24,7 +24,7 @@
 # -e 400  (optional)
 # -sl 200 
 # -ng 1 (number of groups )
-# -zrange -10 nm 10 nm  
+# -zrange -10 nm 10 nm # make sure zmax - zmin > boxz and if -c is set,  make sure zmin < - boxz/2.0. Otherwise your result may not be right.  
 # -outInAm 
 # -h   # print help information 
 # -c 508  ; index atom that used as center to remove pbc, if not set the absolute position is used.  
@@ -99,7 +99,7 @@ class Mol(object):
         (bx, by, bz ) = np.diagonal(box) 
         dist = self.pos - zc
         dist = dist - np.round( dist / bz  ) * bz 
-        binIdx = np.floor( ( dist - zs)/ binsize).astype(int)
+        binIdx = np.floor( ( dist - zs)/ binsize).astype(int)  # If dist < zs, binIdx will be negative. Since in python l[-1] has meaning, it will wrap the histogram around. 
         dens = 1.0/(binsize * bx * by )
         for i in binIdx:
             self.bins[ i ] += dens
@@ -137,7 +137,7 @@ if __name__ == '__main__':
                   '                    -step  2    ; calcualte every 2 frames xtc file\n'\
                   '                    -sl 200     ; number of slices in z   \n' \
                   '                    -ng 1       ; number of groups to compute density. Should be consistent with run.ndx \n' \
-                  '                    -zrange  -10 (nm) 10 (nm) ; range of z \n' \
+                  '                    -zrange  -10 (nm) 10 (nm) ; range of z,  make sure zmax - zmin > boxz and if -c is set,  make sure zmin < - boxz/2.0. Otherwise your result may not be right.  \n' \
                   '                    -outInAm    ; output z in Am unit instead of nm \n' \
                   '                    -c 508      ; index atom that used as center to remove pbc.\n'\
                   '                    -h          ; print help information\n'
@@ -156,7 +156,7 @@ if __name__ == '__main__':
 
     histogramBinCenter = np.linspace( zRange_min, zRange_max, nBins+1)
     histogramBinCenter = np.array( [ (i+j)/2.0 for i,j in zip( histogramBinCenter[0:-1] , histogramBinCenter[1:]  )] , dtype =float )
-    
+  
     index = parseNdx(inputP)
 
     mol = []
@@ -198,9 +198,6 @@ if __name__ == '__main__':
             
             global_time += 1
             # print every 100 ps 
-            if global_time % 100 == 0 :
-                sys.stdout.write("reading frame : %10.3f frames\r" % (global_time) ) 
-                sys.stdout.flush()
 
             if time_step  > 1:
                 if global_time % time_step != 0 : continue
@@ -210,6 +207,11 @@ if __name__ == '__main__':
                 break 
 
             if global_time >= time_start :
+                
+                if global_time % 100 == 0 :
+                    sys.stdout.write("reading frame : %10.3f frames\r" % (global_time) ) 
+                    sys.stdout.flush()
+                
                 # shift system 
                 if symmFlag:
                     shift_z(f.x, cIdx, f.box[2][2] )
@@ -234,8 +236,7 @@ if __name__ == '__main__':
     if inputP.has_key('-outInAm'):
         histogramBinCenter *= 10.0
     
-    pFmt = lambda x : '%10.4f' % x 
-    pFmtAm = lambda x : '%10.6f' % x 
+    pFmt = lambda x : '%15.6f' % x 
     
     # write comment for the output:
     fout.write( '# ' +' '.join(sys.argv) + '\n'  )
@@ -244,7 +245,7 @@ if __name__ == '__main__':
         l = pFmt( histogramBinCenter[i]  )
         for j in mol:
             if inputP.has_key('-outInAm'):
-                l += pFmtAm( j.bins[i] /frame_c / 1000.0 )
+                l += pFmt( j.bins[i] /frame_c / 1000.0 )
             else:
                 l += pFmt( j.bins[i] /frame_c )
         fout.write( '%s\n' % l  )
