@@ -69,7 +69,6 @@ if inputP.has_key('-symm'):
         sys.stderr.write("symm set, zmin and zmax not differ by sign\n")
         sys.exit(1)
 
-pdb.set_trace()
 if zflag == 1 :
     sim = np.array([ i for i in sim if i[0]>=zmin and i[0] <= zmax ]  , dtype='float' )
 
