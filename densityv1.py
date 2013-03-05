@@ -32,21 +32,9 @@
 import sys, pdb 
 import xdrfile as xdrfile 
 import numpy as np
-import re
+from lnx_util import parseInput , print_help
 
-def parseInput(l):
-    inputP = {}
-    
-    flag = re.compile('-\D+')
-    indx = [ i for (i, n ) in enumerate(l) if flag.match(n)   ]
-    indx.append(len(l))
-    
-    for i in range( len(indx) -1 ):
-        inputP[l[indx[i]]] = l[ indx[i]+1: indx[i+1] ]
-        if len(inputP[l[indx[i]] ] ) ==1 :
-            inputP[ l[indx[i]]] = inputP[l[indx[i]]][0]
 
-    return inputP
 
 def parseNdx(inputP):
     fin = [ i.strip() for i in   open(inputP['-n']) ]
@@ -120,34 +108,25 @@ if __name__ == '__main__':
     # check input 
     paraOpt = [ '-f', '-s', '-n', '-o', '-b', '-e', '-sl', '-ng', '-zrange', '-outInAm',  '-h' , '-c', '-step' ]
 
-    for i in inputP:
-        if i not in paraOpt:
-            sys.stderr.write('Input parameter no recognized. Check with -h option \n')
-            sys.exit(1)
 
 
-    if inputP.has_key('-h'):
-        helpdoc = '' \
-                  'Usage!  ./prog.py   -f run1.xtc run2.xtc ...  \n' \
-                  '                    -s bilayer.mass ; mass file of all bilayer atoms   \n' \
-                  '                    -n run.ndx  ; gromacs index file of all the groups to compute density  \n' \
-                  '                    -o out.xvg   \n' \
-                  '                    -b 200      ; beginning of frame (ps) \n' \
-                  '                    -e 400      ; ending of frame (ps)    \n' \
-                  '                    -step  2    ; calcualte every 2 frames xtc file\n'\
-                  '                    -sl 200     ; number of slices in z   \n' \
-                  '                    -ng 1       ; number of groups to compute density. Should be consistent with run.ndx \n' \
-                  '                    -zrange  -10 (nm) 10 (nm) ; range of z,  make sure zmax - zmin > boxz and if -c is set,  make sure zmin < - boxz/2.0. Otherwise your result may not be right.  \n' \
-                  '                    -outInAm    ; output z in Am unit instead of nm \n' \
-                  '                    -c 508      ; index atom that used as center to remove pbc.\n'\
-                  '                    -h          ; print help information\n'
-                
+    helpdoc = '' \
+              'Usage!  ./prog.py   -f run1.xtc run2.xtc ...  \n' \
+              '                    -s bilayer.mass ; mass file of all bilayer atoms   \n' \
+              '                    -n run.ndx  ; gromacs index file of all the groups to compute density  \n' \
+              '                    -o out.xvg   \n' \
+              '                    -b 200      ; beginning of frame (ps) \n' \
+              '                    -e 400      ; ending of frame (ps)    \n' \
+              '                    -step  2    ; calcualte every 2 frames xtc file\n'\
+              '                    -sl 200     ; number of slices in z   \n' \
+              '                    -ng 1       ; number of groups to compute density. Should be consistent with run.ndx \n' \
+              '                    -zrange  -10 (nm) 10 (nm) ; range of z,  make sure zmax - zmin > boxz and if -c is set,  make sure zmin < - boxz/2.0. Otherwise your result may not be right.  \n' \
+              '                    -outInAm    ; output z in Am unit instead of nm \n' \
+              '                    -c 508      ; index atom that used as center to remove pbc.\n'\
+              '                    -h          ; print help information\n'
 
-        sys.stdout.write(helpdoc)
-        sys.exit(1)
-
-
-
+    print_help(inputP, paraOpt, helpdoc)
+    
     # setup histogram 
     nBins = int( inputP['-sl'] ) 
     zRange_min = float( inputP['-zrange'][0]  )

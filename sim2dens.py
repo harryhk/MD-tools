@@ -1,6 +1,6 @@
 import sys , pdb
-import numpy as np 
-import re
+import numpy as np
+from  lnx_util import parseInput, print_help
 
 #  input.sim : 
 #  atomicdens: dens contribution from  each atom. First line Header, second line atomic contributions.  
@@ -8,35 +8,20 @@ import re
 #  index end:  index =1 eq. column 1. Column 0 is z axis. Index end is included. 
 
 
-def parseInput(l):
-    inputP = {}
-    
-    flag = re.compile('-\D+')
-    indx = [ i for (i, n ) in enumerate(l) if flag.match(n)   ]
-    indx.append(len(l))
-    
-    for i in range( len(indx) -1 ):
-        inputP[l[indx[i]]] = l[ indx[i]+1: indx[i+1] ]
-        if len(inputP[l[indx[i]] ] ) ==1 :
-            inputP[ l[indx[i]]] = inputP[l[indx[i]]][0]
-
-    return inputP
 
 
 inputP = parseInput(sys.argv[1:])
 paraOpt = [ '-f', '-s', '-idx', '-z','-symm', '-h'  ]
 
 
-for i in inputP:
-    if i not in paraOpt or i=='-h':
-        helpdoc ="Usage! ./prog.py\n"\
-                "       -f input.sim  ; input sim file, first column: z axis, second-end : each type of atom  \n"\
-                "       -s atomicdens ; First line atom type header ; second line dens for each atom type \n"\
-                "       -idx index_s index_e  ; the sum from ith atom to jth atom. Closed brackets. Atom index start from 1\n"\
-                "       -z z_min zmax ; set z range. if not set, use the whole data range. If -symm set, |z_min| = |z_max|\n"\
-                "       -symm ; symmetrized around 0 \n"
-        sys.stderr.write(helpdoc)
-        sys.exit(1)
+helpdoc ="Usage! ./prog.py\n"\
+        "       -f input.sim  ; input sim file, first column: z axis, second-end : each type of atom  \n"\
+        "       -s atomicdens ; First line atom type header ; second line dens for each atom type \n"\
+        "       -idx index_s index_e  ; the sum from ith atom to jth atom. Closed brackets. Atom index start from 1\n"\
+        "       -z z_min zmax ; set z range. if not set, use the whole data range. If -symm set, |z_min| = |z_max|\n"\
+        "       -symm ; symmetrized around 0 \n"
+
+print_help(inputP, paraOpt, helpdoc)
 
 sim = np.array( [ i.split() for i in  open(inputP['-f']).readlines() if i[0]!='#' ] , dtype='float')
 eN  = np.array( open(inputP['-s']).readlines()[1].strip().split()  , dtype='float')
