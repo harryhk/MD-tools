@@ -31,4 +31,4 @@ def print_help(inputP, paraOpt, helpdoc):
         if i not in paraOpt or i == '-h':
             sys.stderr.write(helpdoc)
             sys.exit(1)
-    
+
