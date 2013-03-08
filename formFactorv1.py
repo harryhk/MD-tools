@@ -14,7 +14,7 @@ paraOpt = ['-f', '-nm2am' , '-wdens', '-q' , '-of' , '-oq', '-h']
 helpdoc="Usage!   ./prog.py\n"\
         "         -f input.edens  \n"\
         "         -nm2am   ; convert unit from nm to am \n"\
-        "         -wdens  0.323  ; bulk water density in unit of am^3. This has to be done manually.\n"\
+        "         -wdens  0.323  ; bulk water density. This has to be done manually.\n"\
         "         -q  0.0 0.25 0.5 ... ; select multiple q value to look at each z contriubtion \n"\
         "         -of  out.xff   ; filename for output xray form factor\n"\
         "         -oq  out.qz    ; filename, contribution from each z at different q\n"\
@@ -37,6 +37,7 @@ water_dens = float(inputP['-wdens'])
 # convert nm to am 
 if inputP.has_key('-nm2am'):
 	data = np.array( [ [ i[0]*10, i[1] /1000 ] for i in data   ] , dtype='float')
+    water_dens /= 1000.0
 
 # substract bulk water density 
 data[:,1] = data[:,1] - water_dens
