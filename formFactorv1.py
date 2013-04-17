@@ -5,8 +5,8 @@ import numpy as np
 from  lnx_util import parseInput, print_help
 
 def xvg( fn  ):
-	f=open(fn, 'r')
-	return np.array( [  i.strip().split()  for i in f if i[0] !='@' and i[0] != '#'] , dtype='float')
+    f=open(fn, 'r')
+    return np.array( [  i.strip().split()  for i in f if i[0] !='@' and i[0] != '#'] , dtype='float')
 
 inputP = parseInput(sys.argv[1:])
 paraOpt = ['-f', '-nm2am' , '-wdens', '-q' , '-of' , '-oq', '-h']
@@ -23,8 +23,8 @@ helpdoc="Usage!   ./prog.py\n"\
 print_help(inputP, paraOpt, helpdoc)
 
 #if len(sys.argv) != 4:
-#	print("Usage! prog.py dens.xvg  water_dens(am) [am/nm]")
-#	exit(1)
+#    print("Usage! prog.py dens.xvg  water_dens(am) [am/nm]")
+#    exit(1)
 
 #water_s=float(sys.argv[3])
 #water_e=float(sys.argv[4])
@@ -36,7 +36,7 @@ water_dens = float(inputP['-wdens'])
 
 # convert nm to am 
 if inputP.has_key('-nm2am'):
-	data = np.array( [ [ i[0]*10, i[1] /1000 ] for i in data   ] , dtype='float')
+    data = np.array( [ [ i[0]*10, i[1] /1000 ] for i in data   ] , dtype='float')
     water_dens /= 1000.0
 
 # substract bulk water density 
@@ -98,22 +98,22 @@ if inputP.has_key('-of'):
     f2.write('%s\n' % ( '#'+' '.join(sys.argv)))
     sum = np.sum( temp_sum, 0) * dz 
     for i , j in zip( q, sum  ):
-	    f2.write( "%10.3f%10.3f\n" % ( i, np.abs(j)) ) 
+        f2.write( "%10.3f%10.3f\n" % ( i, np.abs(j)) ) 
 
 #for q in np.linspace(0,1, num=1000):
-#	sum=0;
+#    sum=0;
 #
-#	for i in range(np.size(data,0) -1 ) :
-#		av= ( data[i, 1] + data[i+1, 1] ) / 2
-#		dz= data[i+1,0] - data[i,0]
-#		z= (data[i+1,0] + data[i,0] ) /2
-#		sum+= av * np.cos( q * z ) * dz
-#	
+#    for i in range(np.size(data,0) -1 ) :
+#        av= ( data[i, 1] + data[i+1, 1] ) / 2
+#        dz= data[i+1,0] - data[i,0]
+#        z= (data[i+1,0] + data[i,0] ) /2
+#        sum+= av * np.cos( q * z ) * dz
+#    
 #
 #
-#	print "%10.3f%10.3f" % ( q, 2*np.abs(sum)  )  
+#    print "%10.3f%10.3f" % ( q, 2*np.abs(sum)  )  
 
 
-		
+        
 
 
