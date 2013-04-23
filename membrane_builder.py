@@ -91,6 +91,14 @@ class Molecule(object):
         return the box dimension that can cover the molecule
         '''
         return tuple( self.coor.max(0) - self.coor.min(0) )
+
+    def get_polar_box(self):
+        '''
+        return the box in polar coordinates
+        '''
+        r = np.max(  np.sqrt( self.coor[:,0] **2 + self.coor[:,1] **2  ) ) 
+        z = self.coor[:,2].max() - self.coor[:,2].min()
+        return (r, z)
     
     def get_coor_by_name(self, aName):
         '''
@@ -167,10 +175,11 @@ class Monolayer(System):
         System.__init__(self)
         self.nx , self.ny, self.dx, self.dy = ( nx, ny, dx, dy )
     
-    def add_mols(self, mol, index):
+    def add_mols(self, mol, index, random_rotate=False):
         ''' 
         add mol into the index position 
         index is the list of 1d indexes in range(nx * ny)
+        random_rotate if you want to rotate the adding mols
         '''
         index2grid =  lambda x: ( x % self.nx , x/self.nx )
 
@@ -178,7 +187,9 @@ class Monolayer(System):
             idx_x , idx_y = index2grid(i)
             tmp_mol = mol.copy()
             # a random rotation around z axis 
-            tmp_mol.set_rotate( [0,0,1], 2* np.pi * random.random() )
+            if random_rotate:
+                tmp_mol.set_rotate( [0,0,1], 2* np.pi * random.random() )
+            
             tmp_mol.set_trans( [idx_x * self.dx, idx_y * self.dy, 0] )
             System.add_mol(self, tmp_mol)
     
@@ -187,14 +198,16 @@ class Monolayer(System):
 if __name__ == '__main__':
 
     inputP = lu.parseInput(sys.argv[1:])
-    paraOpt = [ '-grid', '-chol', '-dopc', '-o'  ]
+    paraOpt = [ '-grid', '-chol', '-dopc', '-o', '-randomRotate'  ]
 
     
     helpdoc="Usage!  ./prog.py\n"\
             "        -grid 16 16     ; grid for monolayer\n"\
             "        -chol chol.base num ; only for monolayer\n"\
             "        -dopc dopc.base num\n"\
+            "        -randomRotate   dopc chol    ; set it when you want to a random rotate on each molecule. You may need a much larger box\n"\
             "        -o    out.gro      \n"
+
     
     lu.print_help(inputP, paraOpt, helpdoc)
 
@@ -213,10 +226,14 @@ if __name__ == '__main__':
 
     # build grid 
     nx, ny = [ int(i) for i in inputP['-grid'] ]
+    
     print "Constructing bilayers on a %d x %d grid" %( nx, ny )
-    print "DOPC dimension: %8.3f%8.3f%8.3f" %( dopc.get_box() ) 
-    print "CHOL dimension: %8.3f%8.3f%8.3f" %( chol.get_box() )
+    print "DOPC dimension : %8.3f%8.3f%8.3f" %( dopc.get_box() ) 
+    print "DOPC dimension in polar coor: %8.3f%8.3f" %( dopc.get_polar_box() ) 
+    print "CHOL dimension : %8.3f%8.3f%8.3f" %( chol.get_box() )
+    print "CHOL dimension in polar coor: %8.3f%8.3f" %( chol.get_polar_box() )
     dx , dy = [  float(i) for i in  raw_input("Input Grid spacing dx, dy: ").split()  ]
+        
     
 
     n_tot = nx * ny 
@@ -224,16 +241,25 @@ if __name__ == '__main__':
     bilayer_u = Monolayer(nx, ny, dx, dy)
     chol_index = random.sample( range(n_tot), nChol )
     
-    bilayer_u.add_mols( dopc, list( set(range(n_tot)) - set(chol_index) ) )
-    bilayer_u.add_mols( chol, chol_index )
+    # rotate flag
+    rand_rot_chol, rand_rot_dopc = (False, False) 
+    try:
+        rand_rot_chol = 'chol' in inputP['-randomRotate']
+        rand_rot_dopc = 'dopc' in inputP['-randomRotate']
+    except KeyError:
+        pass
+    
+    bilayer_u.add_mols( dopc, list( set(range(n_tot)) - set(chol_index) ), rand_rot_dopc )
+    bilayer_u.add_mols( chol, chol_index , rand_rot_chol)
 
     bilayer_l = Monolayer(nx, ny, dx, dy)
     chol_index = random.sample( range(n_tot), nChol )
     
-    bilayer_l.add_mols( dopc.copy().set_rotate([1,0,0], np.pi), list( set(range(n_tot)) - set(chol_index) ) )
-    bilayer_l.add_mols( chol.copy().set_rotate([1,0,0], np.pi), chol_index )
+    bilayer_l.add_mols( dopc.copy().set_rotate([1,0,0], np.pi), list( set(range(n_tot)) - set(chol_index) ), rand_rot_dopc )
+    bilayer_l.add_mols( chol.copy().set_rotate([1,0,0], np.pi), chol_index , rand_rot_chol)
 
-    bilayer_u.set_trans([0,0, 2.8])
+    bilayer_seq = float( raw_input("Separation between monolayer: (2.8) ")  )
+    bilayer_u.set_trans([0,0, bilayer_seq])
     bilayer_u.extend(bilayer_l) 
 
 
