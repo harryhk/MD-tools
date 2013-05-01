@@ -1,19 +1,28 @@
 # this file modify the lipid.itp file for rest 
 
-import sys, re
+import sys, re, math
+import pdb
 
 debug = 1
 
-def typeA2B(c):
-    if not c.isalpha():
-        return c
-
-    d = c.upper()
-    if c.islower():
-        return chr( ord('A') + ( ord(d) - ord('A')  + 3) % 26 ).lower()
+def typeA2B(typeA):
+    '''
+    input:  string typeA
+    output: string typeB
+    '''
+    
+    if len(typeA) <5:
+        return '_'+ typeA
     else:
-        return chr( ord('A') + ( ord(d) - ord('A')  + 3) % 26 )
+        assert 'R' in typeA
+        return typeA.replace('R', '-') 
 
+def bondedA2B(typeA):
+    if typeA == '':
+        return ''
+    else:
+        assert typeA[0] == 'g'
+        return 'h' + typeA[1:]
 
 
 class Atom(object):
@@ -25,13 +34,14 @@ class Atom(object):
         '''
         use a single line to initialize Atom object
         line should not be the comment line in topology files
+        scale here is for scaling on charge on typeB
         '''
         line = re.sub( re.compile(';.*'), '', line  )  # line[:line.index(';')]
         self.nr , self.type , self.resnr , self.residue , self.atom , self.cgnr , self.charge , self.mass  =\
          [ _i(_j) for _i, _j in zip( [ int, str, int, str, str, int, float, float ] , line.strip().split() ) ]
         
         self.massB = self.mass
-        self.typeB =''.join(map(typeA2B, self.type))
+        self.typeB = typeA2B(self.type)
         self.chargeB = self.charge * scale
 
     def __repr__(self):
@@ -55,16 +65,11 @@ class Bonded(object):
         '''
         line = re.sub( re.compile(';.*'), '', line  ).strip().split()   #  line[: line.index(';')].strip().split()
         self.data = map(int, line[:index] )
-        self.par_A = line[index] if index == len(line)-1 else ''
-        # parameter type should be 1 elements
-        #assert len(self.par_A) <= 1
-        #self.par_B = ''.join( map(typeA2B , self.par_A) )
-        self.par_B = [ i for i in self.par_A ] 
-        if self.par_B:
-            self.par_B[0] = 'h'
-            self.par_B = ''.join(self.par_B)
+        self.funct = self.data[-1]
 
+        self.par_A = line[index] if index == len(line)-1 else ''
         
+        self.par_B = bondedA2B( self.par_A )
         self.index = index
 
     def get_string_AB(self):
@@ -140,24 +145,29 @@ class MoleculeTop(object):
                   'angles'       : Angle,
                   'dihedrals'    : Dihedral
                 }
+    bonded_flags=( 'bonds', 'angles', 'dihedrals'  )
 
-    def __init__(self, lines):
+    def __init__(self, lines, gamma):
         '''
         lines to initialize a complete molecule 
         first line must start with [ moleculetype ]
         '''
         
         self.top={}
+        for i in MoleculeTop.top_class:
+            self.top[i] = []
+
         self.flag = None 
 
         for line_num, line in enumerate(lines):
             if self.set_flag(line):
                 continue
             else:
-                try:
+                if self.flag == 'atoms':
+                    self.top[self.flag].append( MoleculeTop.top_class[ self.flag ](line, math.sqrt( gamma ) )  ) # charge are scale by sqrt(gamma)  
+                else:
                     self.top[self.flag].append( MoleculeTop.top_class[ self.flag ](line)  ) 
-                except KeyError:
-                    self.top[self.flag]= [ MoleculeTop.top_class[ self.flag ](line)  ]
+                    
 
     def set_flag(self, line):
         if line[0] =='[':
@@ -171,7 +181,18 @@ class MoleculeTop(object):
         return a set of all atomtypes in the molecule
         '''
         return set( [ i.type for i in  self.top['atoms'] ] )
-    
+  
+    def bonded_types(self):
+        '''
+        return a set of all bonded types in molecule
+        ( par_A, functype, 'bond, angle ,etc'  )
+        '''
+        tmp = set()
+        for i in MoleculeTop.bonded_flags:
+            tmp |= set([ ( j.par_A, j.funct, i )  for j in self.top[i] ] )
+
+        return tmp
+
     def display(self, fout):
         for i in MoleculeTop.flags:
             # print header string 
@@ -186,7 +207,7 @@ class MoleculeTop(object):
         
 
 class Topology(object):
-    def __init__(self, filename):
+    def __init__(self, filename, gamma = 1.0):
         '''
         read the whole topology file at once 
         strip spaces at the begining and end of each line
@@ -200,25 +221,42 @@ class Topology(object):
         mole_idx = [ i for i, j in enumerate(lines) if j.strip('[] ') == 'moleculetype' ]
         mole_idx.append(len(lines)) 
 
-        for idx_start, idx_end  in zip( mole_idx[:-1], mole_idx[1:] ): 
-            self.top.append( MoleculeTop(lines[idx_start: idx_end])  )
+        for idx_start, idx_end  in zip( mole_idx[:-1], mole_idx[1:] ): self.top.append( MoleculeTop(lines[idx_start: idx_end], gamma)  )
+
+        # maps for change typeA to typeB
+        self.nameMap = {}
+        self.bondMap = {}
+        self.name_map()
+        self.bond_map()
 
     def display(self, fout):
         for i in self.top:
             i.display(fout)
 
-    def all_atom_Atypes(self):
+    def name_map(self):
         '''
-        return a set of all atom Atypes 
+        return a dict of all atom Atypes mapping
         '''
         tmp = set()
         for i in self.top:
             tmp |= i.atom_types()
-        return tmp 
+        
+        for i in tmp:
+            self.nameMap[i] = typeA2B(i) 
 
-            
-            
+    def bond_map(self):
+        '''
+        return a dict of all bonded Atypes mapping
+        '''
+        tmp = set()
+        for i in self.top:
+            tmp |= i.bonded_types()
 
+        # check if gd_1 uniquely difines the bonded type 
+        assert len(tmp) == len( set( [ i[0] for i in tmp] ) )
+
+        for i in tmp:
+            self.bondMap[ i[0] ] = (bondedA2B(i[0]), ) + i[1:]
     
 
 
@@ -226,4 +264,5 @@ class Topology(object):
 if __name__ == '__main__':
     top = Topology(sys.argv[1])
     top.display(sys.stdout)
-    print top.all_atom_Atypes()
+    print top.nameMap
+    print top.bondMap

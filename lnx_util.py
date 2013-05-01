@@ -21,14 +21,18 @@ def parseInput(l):
     return inputP
 
 
+class MySet(set):
+    def __repr__(self):
+        return ' '.join( repr(i) for i in self  )
+
 def print_help(inputP, paraOpt, helpdoc):
     ''' inputP: dictionary parsed from parseInput
         paraOpt: legit keys in inputP 
         helpdoc: help string, trigerred by -h  
     '''
-    
-    for i in inputP:
-        if i not in paraOpt or i == '-h':
-            sys.stderr.write(helpdoc)
-            sys.exit(1)
+    tmp = MySet( inputP ) - MySet(paraOpt ) 
+    if inputP.has_key('-h') or  len(tmp) > 0:
+        sys.stderr.write("Invalid input: %s\n" %  repr(tmp) )
+        sys.stderr.write(helpdoc)
+        sys.exit(1)
 
