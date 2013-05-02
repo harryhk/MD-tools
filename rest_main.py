@@ -24,6 +24,7 @@ lnx_util.print_help(inputP, paraOpt, helpdoc)
 t1 = float( inputP['-T1'] )
 t2 = float( inputP['-T2'] )
 gamma = t1/ t2 
+print "gamma: %5.3f" % gamma
 
 solute_top = rest_lipid_top.Topology( inputP['-top'], gamma)
 bondedff = rest_force_field_top.BondedForceField(inputP['-bondedTop'], solute_top.bondMap, gamma )
