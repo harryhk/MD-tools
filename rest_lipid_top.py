@@ -3,7 +3,7 @@
 import sys, re, math
 import pdb
 
-debug = 1
+debug = 0
 
 def typeA2B(typeA):
     '''
@@ -29,6 +29,7 @@ class Atom(object):
     header = ( 'nr', 'type' , 'resnr' , 'residue' , 'atom' , 'cgnr' , 'charge' , 'mass', 'typeB', 'chargeB', 'massB' )
     header_string = '%8s' * len(header) % header
     format_string = "%8d%8s%8d%8s%8s%8d%10g%10g%8s%10g%10g"
+    format_string_lambda = "%8d%8s%8d%8s%8s%8d%10g%10g"
     
     def __init__(self, line, scale = 1.0):
         '''
@@ -46,6 +47,9 @@ class Atom(object):
 
     def __repr__(self):
         return Atom.format_string % ( self.nr, self.type, self.resnr, self.residue, self.atom, self.cgnr, self.charge, self.mass, self.typeB, self.chargeB, self.massB)
+    
+    def _repr_lambda(self):
+        return Atom.format_string_lambda % ( self.nr, self.typeB, self.resnr, self.residue, self.atom, self.cgnr, self.chargeB, self.massB) 
     
     def display_typeAB(self):
         return Atom.format_string % ( self.nr, self.type, self.resnr, self.residue, self.atom, self.cgnr, self.charge, self.mass, self.typeB, self.chargeB, self.massB)
@@ -67,7 +71,7 @@ class Bonded(object):
         self.data = map(int, line[:index] )
         self.funct = self.data[-1]
 
-        self.par_A = line[index] if index == len(line)-1 else ''
+        self.par_A = line[index] if index <= len(line)-1 else ''
         
         self.par_B = bondedA2B( self.par_A )
         self.index = index
@@ -77,7 +81,12 @@ class Bonded(object):
         return string include type A and type B
         '''
         return ( '%8d' * self.index + '%12s' * 2)  % ( tuple(self.data) + (self.par_A, self.par_B) )
-        
+
+    def _repr_lambda(self):
+        '''
+        return string with only type B
+        '''
+        return ( '%8d' * self.index + '%12s' )  % ( tuple(self.data) + ( self.par_B, ) )
 
 class Bond(Bonded):
     header = ('ai', 'aj', 'funct', 'par_A', 'par_B')
@@ -103,6 +112,10 @@ class Pair(Bonded):
         Bonded.__init__(self, line , 3)
 
     def __repr__(self):
+        tmp = tuple(self.data) 
+        return Pair.format_string % tmp 
+    
+    def _repr_lambda(self):
         tmp = tuple(self.data) 
         return Pair.format_string % tmp 
 
@@ -134,6 +147,9 @@ class Moleculetype(object):
         self.line = re.sub( re.compile(';.*'), '', line  )  #line[: line.index(';')].strip().split()
 
     def __repr__(self):
+        return self.line 
+    
+    def _repr_lambda(self):
         return self.line 
 
 class MoleculeTop(object):
@@ -204,6 +220,25 @@ class MoleculeTop(object):
                 print >> fout, repr(j)
 
             print >> fout 
+    
+    
+    def lambda_display(self, fout):
+        '''
+        this display is used when we want to create topologies for each lambda
+        set typeA is the modefied topology. 
+        With this feature, we do not need free energy option to do hamiltonian exchange
+        '''
+        
+        for i in MoleculeTop.flags:
+            # print header string 
+            print >> fout, '[ ' +  i  + ' ]'
+            print >> fout, '; '+ MoleculeTop.top_class[i].header_string
+
+            # sub class
+            for j in self.top[i]:
+                print >> fout, j._repr_lambda()
+
+            print >> fout 
         
 
 class Topology(object):
@@ -233,6 +268,10 @@ class Topology(object):
         for i in self.top:
             i.display(fout)
 
+    def lambda_display(self, fout):
+        for i in self.top:
+            i.lambda_display(fout)
+    
     def name_map(self):
         '''
         return a dict of all atom Atypes mapping
@@ -252,6 +291,10 @@ class Topology(object):
         for i in self.top:
             tmp |= i.bonded_types()
 
+        if debug:
+            pdb.set_trace()
+            print tmp
+
         # check if gd_1 uniquely difines the bonded type 
         assert len(tmp) == len( set( [ i[0] for i in tmp] ) )
 
@@ -263,6 +306,6 @@ class Topology(object):
 
 if __name__ == '__main__':
     top = Topology(sys.argv[1])
-    top.display(sys.stdout)
+    top.lambda_display(sys.stdout)
     print top.nameMap
     print top.bondMap
