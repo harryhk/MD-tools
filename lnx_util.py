@@ -1,7 +1,7 @@
 # this file provides basic utilities for other analyse tools. 
 import re
 import sys
-
+import numpy as np 
 
 def parseInput(l):
     ''' l = sys.argv[1:]. this will parse the input and return a dictionary.
@@ -36,3 +36,7 @@ def print_help(inputP, paraOpt, helpdoc):
         sys.stderr.write(helpdoc)
         sys.exit(1)
 
+def xvg( fn  ):
+    f=open(fn, 'r')
+    data = [ i.strip() for i in f  ]
+    return np.array( [  i.split()  for i in data if len(i)!=0 and i[0] !='@' and i[0] != '#' ] , dtype='float')

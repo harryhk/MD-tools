@@ -4,7 +4,7 @@ import rest_lipid_top, rest_force_field_top
 import lnx_util
 
 inputP = lnx_util.parseInput( sys.argv[1:] ) 
-paraOpt = '-top  -bondedTop -nonbondedTop  -otop  -obonded  -ononbonded  -T1  -T2  -h'.split()
+paraOpt = '-top  -bondedTop -nonbondedTop  -otop  -obonded  -ononbonded  -T1  -T2 -sep -h'.split()
 
 helpdoc = 'Usage! ./prog.py \n'\
           '       -top           top1  ; topology file for solutes that need rescale\n'\
@@ -17,6 +17,7 @@ helpdoc = 'Usage! ./prog.py \n'\
           '       -T2            600 k  ; gamma = beta_2 / beta_1      \n'\
           '                              ; charge: q_i = sqrt(gamma) *q_i ;\n'\
           '                              ; vdw   : epsilon_i = epsilon_i * gamma  ; i belongs to solute  ;\n'\
+          '       -sep                  ; when sep flag is set, we print the topology as an individual top rather than free energy format \n'\
           '        -h                    ; print help doc \n'
 
 lnx_util.print_help(inputP, paraOpt, helpdoc)
@@ -30,8 +31,11 @@ solute_top = rest_lipid_top.Topology( inputP['-top'], gamma)
 bondedff = rest_force_field_top.BondedForceField(inputP['-bondedTop'], solute_top.bondMap, gamma )
 nonbondedff = rest_force_field_top.NoneBondedForceField( inputP['-nonbondedTop'], solute_top.nameMap, gamma )
 
+if inputP.has_key('-sep'):
+    solute_top.lambda_display( open(inputP['-otop'], 'w' ) )
+else:
+    solute_top.display( open(inputP['-otop'], 'w' ) )
 
-solute_top.display( open(inputP['-otop'], 'w' ) )
 bondedff.display(open( inputP['-obonded'], 'w') )
 nonbondedff.display(open( inputP['-ononbonded'], 'w') )
 
