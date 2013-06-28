@@ -17,10 +17,11 @@ Usage! ./prog.py
 print_help(inputP, paraOpt, helpdoc)
 
 fin = [ i.strip() for i in open(inputP['-fin']) ]
-fin = [ re.split('\d', i)[1:-1] for i in fin   ]
+fin = [ re.split('\d*', i)[1:-1] for i in fin   ]
 
 nrepl = len(fin[0] )
 n_attempt = len(fin)
+
 
 stat = [ 0 for i in range(nrepl) ]
 for i in fin:
