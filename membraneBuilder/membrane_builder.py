@@ -3,7 +3,7 @@
 
 import numpy as np 
 import sys , copy, random
-import lnx_util as lu
+import common.lnx_util as lu
 
 def rotate_matrix(vec, theta): 
     ''' 

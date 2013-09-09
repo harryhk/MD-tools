@@ -6,17 +6,14 @@ The following is only a general description of each tools listed in this folder.
 
 * densityv1.py:
 	
-	calcualtes the density along z-axis of a lipid bilayer. The number density of each group specified in `-n run.ndx` file is calculated. 
-	
-	You need have xdrfile library for python in your PYTHONPATH evironment variable for the code to work. This library is not included but can be downloaded from [GROMACS website] (http://www.gromacs.org/Downloads)
-	
-	This code can use bilayer center of mass as absolute reference point for each time frame thus elimate the bug in g_density that can not work for system with pressure coupling.
+	* calcualtes the density along z-axis of a lipid bilayer. The number density of each group specified in `-n run.ndx` file is calculated. 
+	* You need have xdrfile library for python in your PYTHONPATH evironment variable for the code to work. This library is not included but can be downloaded from [GROMACS website] (http://www.gromacs.org/Downloads)
+	* This code can use bilayer center of mass as absolute reference point for each time frame thus elimate the bug in g_density that can not work for system with pressure coupling.
 
 * mk_ndx_sim.py:
 	
-	takes a gromacs .gro file and create index file ( *.ndx ) for each atom type. 
-	
-	ouput index file can be used as input for densityv1.py  
+	* takes a gromacs .gro file and create index file ( *.ndx ) for each atom type. 
+	* ouput index file can be used as input for densityv1.py  
 
 * sim2dens.py:
 	
@@ -24,9 +21,8 @@ The following is only a general description of each tools listed in this folder.
 
 * mk_e.sh, mk_e_slipid.sh:
 	
-	takes a gromacs lipid topology file and create the electron weigth for each atom type. Currently, we support GROMOS and Slipid force field .
-	
-	output can be used as input for sim2dens.py
+	* takes a gromacs lipid topology file and create the electron weigth for each atom type. Currently, we support GROMOS and Slipid force field .
+	* output can be used as input for sim2dens.py
 
 * formFactorv1.py:
 	

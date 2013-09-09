@@ -1,6 +1,6 @@
 import sys
 import membrane_builder as mb
-import lnx_util as lu
+import common.lnx_util as lu
 
 if __name__=='__main__':
     
