@@ -15,8 +15,8 @@ paraOpt = [ '-f', '-s', '-idx', '-z','-symm', '-h'  ]
 
 
 helpdoc ="Usage! ./prog.py\n"\
-        "       -f input.sim  ; input sim file, first column: z axis, second-end : each type of atom  \n"\
-        "       -s atomicdens ; First line atom type header ; second line dens for each atom type \n"\
+        "       -f input.sim  ; input sim file, first column: z axis, second to the last column : each type of atom ; non data line starts with #   \n"\
+        "       -s atomicdens ; First line atom type header ; second line dens (can be charge, # of electrons and etc ) per atom type ; only the second line is read by the program. \n"\
         "       -idx index_s index_e  ; the sum from ith atom to jth atom. Closed brackets. Atom index start from 1\n"\
         "       -z z_min zmax ; set z range. if not set, use the whole data range. If -symm set, |z_min| = |z_max|\n"\
         "       -symm ; symmetrized around 0 \n"

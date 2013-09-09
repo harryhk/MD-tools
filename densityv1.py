@@ -115,14 +115,14 @@ if __name__ == '__main__':
               '                    -s bilayer.mass ; mass file of all bilayer atoms   \n' \
               '                    -n run.ndx  ; gromacs index file of all the groups to compute density  \n' \
               '                    -o out.xvg   \n' \
-              '                    -b 200      ; beginning of frame (ps) \n' \
-              '                    -e 400      ; ending of frame (ps)    \n' \
+              '                    -b 200      ; beginning of frame ( actual simulation time depends on how frequent we saved the data  )\n' \
+              '                    -e 400      ; ending of frame     \n' \
               '                    -step  2    ; calcualte every 2 frames xtc file\n'\
               '                    -sl 200     ; number of slices in z   \n' \
               '                    -ng 1       ; number of groups to compute density. Should be consistent with run.ndx \n' \
               '                    -zrange  -10 (nm) 10 (nm) ; range of z,  make sure zmax - zmin > boxz and if -c is set,  make sure zmin < - boxz/2.0. Otherwise your result may not be right.  \n' \
               '                    -outInAm    ; output z in Am unit instead of nm \n' \
-              '                    -c 508      ; index atom that used as center to remove pbc.\n'\
+              '                    -c 508      ; index atom that used as center to remove pbc. Gromacs index start from 1  \n'\
               '                    -h          ; print help information\n'
 
     print_help(inputP, paraOpt, helpdoc)
