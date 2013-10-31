@@ -198,7 +198,7 @@ class Monolayer(System):
 if __name__ == '__main__':
 
     inputP = lu.parseInput(sys.argv[1:])
-    paraOpt = [ '-grid', '-chol', '-dopc', '-o', '-randomRotate'  ]
+    paraOpt = [ '-grid', '-chol', '-dopc', '-o', '-randomRotate' , '-h'  ]
 
     
     helpdoc="Usage!  ./prog.py\n"\
@@ -206,7 +206,8 @@ if __name__ == '__main__':
             "        -chol chol.base num ; only for monolayer\n"\
             "        -dopc dopc.base num\n"\
             "        -randomRotate   dopc chol    ; set it when you want to a random rotate on each molecule. You may need a much larger box\n"\
-            "        -o    out.gro      \n"
+            "        -o    out.gro      \n"\
+            "        -h  ; help message\n"
 
     
     lu.print_help(inputP, paraOpt, helpdoc)
