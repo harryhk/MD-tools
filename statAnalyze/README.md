@@ -12,3 +12,7 @@ The following is only a general description of each tools listed in this folder.
 	
 	* select closet area per lipid that user specifies.
 
+* rdf_err.py
+	
+	* calculate errors of radial distriubtion function between monolayers in bilayer.
+
