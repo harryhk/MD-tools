@@ -2,7 +2,8 @@
 
 import xdrfile as xdrfile 
 import numpy as np 
-import sys , copy 
+import sys , copy , Queue, threading 
+import multiprocessing as mp
 from  common.lnx_util import parseInput, print_help
 
 _debug = 0 
@@ -20,7 +21,17 @@ class Diffusion(object):
         # self.fout      : file handler of output file 
         # self.nFrames   : total # of frames in traj 
         # self.deltaF    : [] of delta frames for diffusion 
-       
+        # self.msdAllPair : dictionary stores that msd of all pairs 
+
+        # if -thread is set , we need to multi threading .
+        # self.flagThread : if it is set, we do multi thread 
+        # self.flagExitThread : exit flag for all thread when self.queue is empty  
+        # self.queueLock  : lock for the Queue 
+        # self.queue      : queue for ( i, j  ) mol pairs 
+        # self.threads    : list of all threads and used for join 
+        # self.nThreads   : number of threads 
+
+
         trajFn = inputP['-f']
         molFn  = inputP['-n']
 
@@ -31,6 +42,8 @@ class Diffusion(object):
         tmpT1 = -1 
         tmpT2 = -1 
         
+        self.msdAllPair = {} 
+
         for f in xdrfile.xdrfile(trajFn):
             tmpx.append( copy.deepcopy(f.x)  )
             #tmpbox.append( copy.deepcopy(f.box) )
@@ -82,8 +95,30 @@ class Diffusion(object):
         if _debug:
             print self.molPair
             print self.timeStep
-    
         
+        # part for multi thread 
+        if inputP.has_key('-thread'):
+            self.flagThread = True 
+        else:
+            self.flagThread = False 
+
+        
+        if self.flagThread:
+            
+            # all the things to set thread environment
+            self.queueLock = threading.Lock() 
+            self.queue = Queue.Queue() 
+
+            self.queueLock.acquire()
+            for  i in self.molPair:
+                self.queue.put( i ) 
+
+            self.queueLock.release()
+            self.threads = []
+
+            self.nThreads = int( inputP['-thread'] )
+            self.flagExitThread = False
+
 
     def msd(self, moli, molj ):
         # r( t  ) should be centered by molecule i 
@@ -121,43 +156,101 @@ class Diffusion(object):
 
     def allPair_msd(self):
         # get all pair msd from self.molPair
-        tmp = []
-        tmp.append( [ i * self.timeStep  for i in self.deltaF ] )
+        c=0
+        tmpPer = 1
+        nc = float( len(self.molPair) )
+        for i in self.molPair:
+            self.msdAllPair[i] = self.msd(i[0], i[1] ) 
+            c+=1
+            if c/ nc > tmpPer / 100.0:
+                print "Progress: %d " % tmpPer + '%'
+                tmpPer += 1 
 
-        for i, j in self.molPair:
-            tmp.append( self.msd(i, j  ) )
+        
+        self.print_msd( )
+    
+    def print_msd(self):
+        timeStep =  [ i * self.timeStep  for i in self.deltaF ] 
 
         # print header 
         headerstr = '%15s' %('# time') + ''.join( [ '%15s' %   str(i)+'-'+str(j)   for i, j in self.molPair  ] ) 
         print >> self.fout , headerstr
+        
+        for idx in range( len( timeStep)   ):
+            self.fout.write('%15.5f' % timeStep[idx])
 
-        # transpose list 
-
-        tmp = map( list, zip(*tmp) ) 
-        for i in tmp:
-            for j in i : 
-                self.fout.write( '%15.5f' % j ) 
+            for i in self.molPair:
+                self.fout.write('%15.5f' % self.msdAllPair[i][idx] )
 
             self.fout.write('\n')
 
 
+    def allPair_msd_thread(self):
+        
+        # create threads 
+        for i in range( self.nThreads):
+            thread = MSD_Thread( i, self)
+            thread.start() 
+            self.threads.append(thread)
+
+        while not self.queue.empty():
+            pass
+
+        self.flagExitThread = True 
+
+        for t in self.threads:
+            t.join()
+
+        #print "exit main thread "
+
+        self.print_msd()
+
+    def solv(self):
+        
+        if self.flagThread:
+            self.allPair_msd_thread()
+        else:
+            self.allPair_msd()
+
+class MSD_Thread(threading.Thread ):
+    
+    def __init__(self, id , prob  ):
+        #  prob should be diffusion class  
+
+        threading.Thread.__init__(self)
+        self.threadId = id 
+        self.prob = prob 
+
+    def run(self) :
+        # msdDict is a dictionary that stores all pairwise msd 
+        while not self.prob.flagExitThread:
             
+            self.prob.queueLock.acquire()
+            if not self.prob.queue.empty():
+                i = self.prob.queue.get() 
+                self.prob.queueLock.release() 
+                #print "Thread %d , pair %d %d" % (self.threadId, i[0], i[1])
+                self.prob.msdAllPair[i] = self.prob.msd( i[0], i[1] )
+            else:
+                self.prob.queueLock.release()
+
         
 
 if __name__ == '__main__':
     
     inputP = parseInput(sys.argv[1:])
 
-    paraOpt = '-f -n -o -h -skip'.split(' ')
+    paraOpt = '-f -n -o -h -skip -thread'.split(' ')
 
     helpdoc = ''\
               'Usage prog.py  -f trajNojump.xtc ; traj of nojump from g_traj  \n'\
               '               -n mol.ndx  ; relative diffusion between mol i and mol j , index start from 1 \n'\
               '               -skip  1[defualt]    ; skip frames in delta T \n'\
+              '               -thread  n           ; use n threads , beware that python with threads is pointless because of global interpreter lock \n'\
               '               -o out.xvg  ; \n'
     
     print_help(inputP, paraOpt , helpdoc )
 
     prob = Diffusion( inputP )
 
-    prob.allPair_msd()
+    prob.solv()
