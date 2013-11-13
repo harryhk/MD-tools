@@ -1,4 +1,5 @@
 # this code calculates the < \delta x(t) ^ 2 > between molecule i and molecule j 
+# always use diffusion_thread.py without thread flag for single process. I keep this file for historical reason.
 
 import xdrfile as xdrfile 
 import numpy as np 
