@@ -221,6 +221,9 @@ class MSD_Thread(threading.Thread ):
         threading.Thread.__init__(self)
         self.threadId = id 
         self.prob = prob 
+        self.traj = copy.deepcopy(prob.traj)
+        self.deltaF = copy.deepcopy( prob.deltaF ) 
+        self.nFrames = np.size( self.traj, 0 )  
 
     def run(self) :
         # msdDict is a dictionary that stores all pairwise msd 
@@ -231,11 +234,45 @@ class MSD_Thread(threading.Thread ):
                 i = self.prob.queue.get() 
                 self.prob.queueLock.release() 
                 #print "Thread %d , pair %d %d" % (self.threadId, i[0], i[1])
-                self.prob.msdAllPair[i] = self.prob.msd( i[0], i[1] )
+                self.prob.msdAllPair[i] = self.msd( i[0], i[1] )
             else:
                 self.prob.queueLock.release()
 
+
+    def msd(self, moli, molj ):
+        # r( t  ) should be centered by molecule i 
+        # d( \delta t ) =  mean( (   r(t + \delta t  ) - r(t)    ) ^2 )
+
+        # only x , y dimension is used 
+
+        trajMoli =  self.traj[:, moli, 0:2 ] 
+        trajMolj =  self.traj[:, molj, 0:2 ] 
         
+        if _debug:
+            print trajMoli
+            print trajMolj
+
+        deltaR  = trajMolj - trajMolj[0, :] - ( trajMoli  - trajMoli[0, : ] )  
+
+        if _debug:
+            print deltaR 
+        
+        msdList = [] 
+
+        
+        for deltaf in self.deltaF:
+            tmp = 0  
+            for i in range( self.nFrames - deltaf   ):
+                nexti = i + deltaf 
+                dr = deltaR[nexti, :] - deltaR[i, :] 
+                tmp += np.dot( dr , dr )  
+            
+
+            msdList.append( tmp / (self.nFrames - deltaf )    ) 
+
+        
+        return msdList
+
 
 if __name__ == '__main__':
     
