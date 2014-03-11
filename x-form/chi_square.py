@@ -8,7 +8,7 @@
 
 import sys
 import numpy as np 
-from lnx_util import parseInput , print_help, xvg 
+from common.lnx_util import parseInput , print_help, xvg 
 
 inputP = parseInput(sys.argv[1:])
 paraOpt = ' -fexp  -fsim   '.split()

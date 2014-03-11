@@ -37,11 +37,12 @@ def weightErr(l1,l2):
 
 
 inputP = parseInput( sys.argv[1:] ) 
-paraOpt = '-f  -range  -abs  -h'.split(' ')
+paraOpt = '-f  -range  -abs  -h -r '.split(' ')
 
 helpdoc = 'Usage ./prog.py  -f rdfu.xvg rdfl.xvg  ; rdf upper and lower files \n'\
           '                 -range 0 3.78         ; only calculate rdf among range \n'\
-          '                 -abs                  ; if present , use absolute error of each point, if not, use weighted\n'
+          '                 -abs                  ; if present , use absolute error of each point, if not, use weighted\n'\
+          '                 -r                    ; if present, g(r) * r '
 
 print_help(inputP, paraOpt, helpdoc)
 
@@ -62,6 +63,9 @@ if np.size(finu, 0) != np.size( finl , 0 ) :
     print "# of rows not match "
     sys.exit(1)
 
+if inputP.has_key( '-r' ) :
+    finu[:,1] *= finu[:,0] * finu[:,1]
+    finl[:,1] *= finl[:,0] * finl[:,1]
 
 if inputP.has_key('-abs'):
     print absErr( finu[:,1], finl[:,1]  )
